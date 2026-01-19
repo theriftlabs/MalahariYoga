@@ -1,16 +1,34 @@
-# malahari_yoga
+# Malahari Yoga 
 
-A new Flutter project.
+Malahari Yoga is a scheduling and student management app built for a yoga studio.  
+It helps teachers manage classes, students, attendance, payments, and learning materials in one place.
 
-## Getting Started
+## Features (Planned)
+### For Students
+- View class schedule
+- Book / cancel sessions
+- Attendance tracking
+- Payment history (optional)
+- Access learning materials (PDFs/videos/links)
+- Notifications & reminders
 
-This project is a starting point for a Flutter application.
+### For Teachers / Admin
+- Create and manage batches / class slots
+- Add and manage students
+- Mark attendance
+- Upload and share materials
+- Track payments & dues (optional)
+- View analytics (attendance trends, revenue summaries, etc.)
 
-A few resources to get you started if this is your first Flutter project:
+## Tech Stack
+- **Flutter** (Dart)
+- **Firebase** (planned)
+  - Authentication
+  - Firestore Database
+  - Cloud Storage
+  - Cloud Functions (optional)
+  - Cloud Messaging (optional)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Platforms
+- Android (primary)
+- iOS (future / optional)
