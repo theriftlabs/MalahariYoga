@@ -1,4 +1,4 @@
-package com.riftlabs.malahariyoga.malahari_yoga
+package com.riftlabs.malahariyoga
 
 import io.flutter.embedding.android.FlutterActivity
 

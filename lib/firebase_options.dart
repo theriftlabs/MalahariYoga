@@ -50,8 +50,8 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB_Ny62st9a0he3_7uZ9HD1wxwBtZMZsaM',
-    appId: '1:748192528786:android:a3d8c9943982cb47a8e94b',
+    apiKey: 'AIzaSyAhFI9xp06gepkeQzlujPJdwS9swatvUCY',
+    appId: '1:748192528786:android:dca82548c993faf6a8e94b',
     messagingSenderId: '748192528786',
     projectId: 'yoga-scheduling-app-3198f',
     storageBucket: 'yoga-scheduling-app-3198f.firebasestorage.app',
@@ -59,12 +59,13 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAskZk_O7lq7jeu3LAf50o-2IwA54MZTz8',
-    appId: '1:748192528786:ios:2caac119a42ea798a8e94b',
+    appId: '1:748192528786:ios:5c8d2e37921a2faea8e94b',
     messagingSenderId: '748192528786',
     projectId: 'yoga-scheduling-app-3198f',
     storageBucket: 'yoga-scheduling-app-3198f.firebasestorage.app',
-    androidClientId: '748192528786-gvjuijmgeuhuj7k01oecjf913a1aiffg.apps.googleusercontent.com',
-    iosClientId: '748192528786-gh9gt2l496cfnh84gno60bobihgsff9d.apps.googleusercontent.com',
+    androidClientId: '748192528786-e87urm54u5eaj4uvtinkcqr387tf72ak.apps.googleusercontent.com',
+    iosClientId: '748192528786-h6cf1haees0l7ajr42tbqdb16ojefblg.apps.googleusercontent.com',
     iosBundleId: 'com.riftlabs.malahariyoga',
   );
+
 }
