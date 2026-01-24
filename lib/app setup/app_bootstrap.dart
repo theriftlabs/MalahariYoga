@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:malahari_yoga/app%20setup/splashScreen.dart';
 import '../appEntry.dart';
 import '../firebase_options.dart';
+import '../nav/appRouter.dart';
 import 'FirebaseFailedScreen.dart';
 
 class AppBootstrap extends StatefulWidget {
@@ -60,7 +61,10 @@ class _AppBootstrapState extends State<AppBootstrap> {
         }
 
         // Firebase ok -> continue app
-        return const AppEntry();
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          routerConfig: appRouter,
+        );
       },
     );
   }
