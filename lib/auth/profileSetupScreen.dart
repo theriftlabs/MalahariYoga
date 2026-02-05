@@ -234,7 +234,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                                       if (!isAdmin)
                                         DropdownButtonFormField<String>(
-                                          value: selectedRole,
+                                          initialValue: selectedRole,
                                           decoration: InputDecoration(
                                             labelText: "Role",
                                             border: OutlineInputBorder(

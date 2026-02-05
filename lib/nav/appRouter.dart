@@ -9,9 +9,23 @@ import 'package:malahari_yoga/auth/passwordResetScreen.dart';
 import 'package:malahari_yoga/auth/profileSetupScreen.dart';
 import 'package:malahari_yoga/auth/verifyScreen.dart';
 import 'package:malahari_yoga/nav/userProfileState.dart';
-import 'package:malahari_yoga/screens/adminHomeScreen.dart';
-import 'package:malahari_yoga/screens/studentHomeScreen.dart';
-import 'package:malahari_yoga/screens/teacherHomeScreen.dart';
+import 'package:malahari_yoga/screens/main_scaffold_screen.dart';
+import 'package:malahari_yoga/screens/teacher/dashboard_tab.dart';
+import 'package:malahari_yoga/screens/teacher/classes/classes_tab.dart';
+import 'package:malahari_yoga/screens/teacher/content_tab.dart';
+import 'package:malahari_yoga/screens/teacher/manage_tab.dart';
+import 'package:malahari_yoga/screens/teacher/profile_tab.dart';
+
+import 'package:malahari_yoga/screens/student/home_tab.dart';
+import 'package:malahari_yoga/screens/student/schedule_tab.dart';
+import 'package:malahari_yoga/screens/student/content_tab.dart';
+import 'package:malahari_yoga/screens/student/profile_tab.dart';
+
+import 'package:malahari_yoga/screens/admin/dashboard_tab.dart';
+import 'package:malahari_yoga/screens/admin/schedule_tab.dart';
+import 'package:malahari_yoga/screens/admin/content_tab.dart';
+import 'package:malahari_yoga/screens/admin/manage_tab.dart';
+import 'package:malahari_yoga/screens/admin/profile_tab.dart';
 
 final AuthState authStateInstance = AuthState();
 final UserProfileState userProfileStateInstance = UserProfileState();
@@ -43,18 +57,74 @@ final GoRouter appRouter = GoRouter(
       path: '/loading',
       builder: (context, state) => const SplashScreen(),
     ),
-    GoRoute(
-      path: '/studentHome',
-      builder: (context, state) => const StudentHomeScreen(),
+    
+    // Teacher Shell
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return MainScaffoldScreen(
+          navigationShell: navigationShell,
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.grid_view), label: 'Dashboard'),
+            NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Schedule'),
+            NavigationDestination(icon: Icon(Icons.play_circle), label: 'Content'),
+            NavigationDestination(icon: Icon(Icons.settings), label: 'Manage'),
+            NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        );
+      },
+      branches: [
+        StatefulShellBranch(routes: [GoRoute(path: '/teacherHome', builder: (context, state) => const TeacherDashboardTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/teacherClasses', builder: (context, state) => const TeacherClassesTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/teacherContent', builder: (context, state) => const TeacherContentTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/teacherManage', builder: (context, state) => const TeacherManageTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/teacherProfile', builder: (context, state) => const TeacherProfileTab())]),
+      ],
     ),
-    GoRoute(
-      path: '/teacherHome',
-      builder: (context, state) => const TeacherHomeScreen(),
+
+    // Student Shell
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return MainScaffoldScreen(
+          navigationShell: navigationShell,
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.grid_view), label: 'Home'),
+            NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Schedule'),
+            NavigationDestination(icon: Icon(Icons.play_circle), label: 'Content'),
+            NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        );
+      },
+      branches: [
+        StatefulShellBranch(routes: [GoRoute(path: '/studentHome', builder: (context, state) => const StudentHomeTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/studentSchedule', builder: (context, state) => const StudentScheduleTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/studentContent', builder: (context, state) => const StudentContentTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/studentProfile', builder: (context, state) => const StudentProfileTab())]),
+      ],
     ),
-    GoRoute(
-      path: '/adminHome',
-      builder: (context, state) => const AdminHomeScreen(),
+
+    // Admin Shell
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return MainScaffoldScreen(
+          navigationShell: navigationShell,
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+            NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Schedule'),
+            NavigationDestination(icon: Icon(Icons.play_circle), label: 'Content'),
+            NavigationDestination(icon: Icon(Icons.settings), label: 'Manage'),
+            NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        );
+      },
+      branches: [
+        StatefulShellBranch(routes: [GoRoute(path: '/adminHome', builder: (context, state) => const AdminDashboardTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/adminSchedule', builder: (context, state) => const AdminScheduleTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/adminContent', builder: (context, state) => const AdminContentTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/adminManage', builder: (context, state) => const AdminManageTab())]),
+        StatefulShellBranch(routes: [GoRoute(path: '/adminProfile', builder: (context, state) => const AdminProfileTab())]),
+      ],
     ),
+
     GoRoute(
       path: '/resetPassword',
       builder: (context, state) => const PasswordResetScreen(),
@@ -94,14 +164,20 @@ final GoRouter appRouter = GoRouter(
     }
 
     // 5) Profile complete -> go based on role
-    final role = userProfileStateInstance.role.toLowerCase();
+    final role = 'teacher'; // userProfileStateInstance.role.toLowerCase();
+
+    // Prevent infinite redirect loop by checking if we are already in the correct shell
+    if (role == 'teacher') {
+       if (loc.startsWith('/teacher')) return null; 
+       return '/teacherHome';
+    }
 
     if (role == 'student') {
-      return (loc == '/studentHome') ? null : '/studentHome';
-    } else if (role == 'teacher') {
-      return (loc == '/teacherHome') ? null : '/teacherHome';
+      if (loc.startsWith('/student')) return null;
+      return '/studentHome';
     } else if (role == 'admin') {
-      return (loc == '/adminHome') ? null : '/adminHome';
+      if (loc.startsWith('/admin')) return null;
+      return '/adminHome';
     }
 
     // fallback if role is missing or invalid
