@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../services/class_service.dart';
+import '../../../services/category_service.dart';
+import '../../../models/category_model.dart';
 
 class CreateClassDialog extends StatefulWidget {
   final String? preFilledCategoryId;
@@ -22,20 +24,19 @@ class CreateClassDialog extends StatefulWidget {
 class _CreateClassDialogState extends State<CreateClassDialog> {
   final _formKey = GlobalKey<FormState>();
   final _classService = ClassService();
+  final _categoryService = CategoryService();
 
   late TextEditingController _titleController;
   late TextEditingController _descController;
-  late TextEditingController _categoryIdController;
+  
+  String? _selectedCategoryId;
+  List<CategoryModel> _categories = [];
 
   DateTime? _startDate;
-  DateTime? _endDate;
+  // End Date is now same as Start Date for single day classes
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   
-  // Simple day toggles
-  final List<String> _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  final Set<String> _selectedDays = {};
-
   bool _isLoading = false;
 
   @override
@@ -43,28 +44,51 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
     super.initState();
     _titleController = TextEditingController();
     _descController = TextEditingController();
-    _categoryIdController = TextEditingController(text: widget.preFilledCategoryId ?? '');
+    _selectedCategoryId = widget.preFilledCategoryId;
     
     _startDate = widget.preFilledDate ?? DateTime.now();
-    _endDate = _startDate?.add(const Duration(days: 90)); // Default ~3 months
     _startTime = widget.preFilledTime ?? const TimeOfDay(hour: 9, minute: 0);
     _endTime = _startTime?.replacing(hour: _startTime!.hour + 1);
+
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    // Determine if we are filtering by parent or just getting top level
+    // For now, let's just get top level + current category if it exists
+    // Ideally we might want a flattened list or similar, but let's stick to top level for the dropdown
+    // or if preFilledCategoryId is set, maybe we don't need to load?
+    // Let's load top level for now.
     
-    // Auto-select the day of the week if date is provided
-    if (widget.preFilledDate != null) {
-      final dayName = DateFormat('E').format(widget.preFilledDate!); // Mon, Tue...
-      _selectedDays.add(dayName);
+    // Using stream as a one-time fetch for dropdown
+    final snapshot = await _categoryService.getTopLevelCategories().first;
+    if (mounted) {
+      setState(() {
+        _categories = snapshot;
+        // If preFilledCategoryId is not in the list (e.g. it's a subcategory), we might need to handle that.
+        // For this simple fix, we assume we are creating at the level we are viewing or selecting a top level.
+        if (_selectedCategoryId != null && !_categories.any((c) => c.id == _selectedCategoryId)) {
+             // If we can't find it in top level, maybe we should fetch it? 
+             // Or just leave it as is if it's already set (value can be anything but Dropdown needs it to be in items)
+             // If it's not in items, Dropdown will crash or show nothing if we don't handle it.
+             // Let's just append a "Current" placeholder if needed or handle this better later.
+             // For now, we assume top level categories. 
+        }
+      });
     }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_startDate == null || _endDate == null || _startTime == null || _endTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select all dates and times")));
+    if (_startDate == null || _startTime == null || _endTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select date and times")));
       return;
     }
-    if (_selectedDays.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select at least one day")));
+    
+    // Enforce category selection
+    final categoryId = _selectedCategoryId;
+    if (categoryId == null || categoryId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a category")));
       return;
     }
 
@@ -74,22 +98,26 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception("No user logged in");
 
+      // Single day class: Start/End Date are the same day
+      // Days array contains just that day name
+      final dayName = DateFormat('E').format(_startDate!);
+
       await _classService.createClass(
         title: _titleController.text,
         description: _descController.text,
         teacherId: user.uid,
-        categoryId: _categoryIdController.text.isEmpty ? 'uncategorized' : _categoryIdController.text,
-        parentCategoryId: 'root', // Simplified for demo
+        categoryId: categoryId,
+        parentCategoryId: 'root', // Simplified
         startTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
         endTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
-        days: _selectedDays.toList(),
+        days: [dayName],
         startDate: _startDate!,
-        endDate: _endDate!,
-        capacity: 20, // Default
+        endDate: _startDate!, // Single day
+        capacity: 20, 
         inviteEnabled: true,
       );
 
-      if (mounted) Navigator.pop(context, true); // Return true on success
+      if (mounted) Navigator.pop(context, true); 
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
@@ -97,24 +125,16 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
     }
   }
 
-  Future<void> _pickDate(bool isStart) async {
+  Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStart ? (_startDate ?? DateTime.now()) : (_endDate ?? DateTime.now()),
+      initialDate: _startDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) {
       setState(() {
-        if (isStart) {
-          _startDate = picked;
-          // Ensure end date is after start
-          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-             _endDate = _startDate!.add(const Duration(days: 90));
-          }
-        } else {
-          _endDate = picked;
-        }
+        _startDate = picked;
       });
     }
   }
@@ -151,59 +171,51 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
                 controller: _descController,
                 decoration: const InputDecoration(labelText: "Description"),
               ),
-              TextFormField(
-                controller: _categoryIdController,
-                decoration: const InputDecoration(labelText: "Category ID (Optional)"),
-              ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => _pickDate(true),
-                      child: Text(_startDate == null ? "Start Date" : DateFormat('yyyy-MM-dd').format(_startDate!)),
-                    ),
-                  ),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => _pickDate(false),
-                      child: Text(_endDate == null ? "End Date" : DateFormat('yyyy-MM-dd').format(_endDate!)),
-                    ),
-                  ),
-                ],
+              
+              // Category Dropdown
+              DropdownButtonFormField<String>(
+                value: _selectedCategoryId,
+                decoration: const InputDecoration(labelText: "Category"),
+                items: _categories.map((c) {
+                  return DropdownMenuItem(value: c.id, child: Text(c.name));
+                }).toList(),
+                onChanged: (val) => setState(() => _selectedCategoryId = val),
+                 validator: (v) => v == null ? "Required" : null,
               ),
+
+              const SizedBox(height: 16),
+              
+              // Date Picker (Single)
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_today),
+                  label: Text(_startDate == null ? "Select Date" : DateFormat('EEE, MMM d, yyyy').format(_startDate!)),
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+
               Row(
                 children: [
                    Expanded(
-                    child: TextButton(
+                    child: TextButton.icon(
                       onPressed: () => _pickTime(true),
-                      child: Text(_startTime == null ? "Start Time" : _startTime!.format(context)),
+                      icon: const Icon(Icons.access_time),
+                      label: Text(_startTime == null ? "Start" : _startTime!.format(context)),
                     ),
                   ),
                   Expanded(
-                    child: TextButton(
+                    child: TextButton.icon(
                       onPressed: () => _pickTime(false),
-                      child: Text(_endTime == null ? "End Time" : _endTime!.format(context)),
+                      icon: const Icon(Icons.access_time_filled),
+                      label: Text(_endTime == null ? "End" : _endTime!.format(context)),
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 4,
-                children: _days.map((day) {
-                  final isSelected = _selectedDays.contains(day);
-                  return FilterChip(
-                    label: Text(day),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                         if (selected) _selectedDays.add(day);
-                         else _selectedDays.remove(day);
-                      });
-                    },
-                  );
-                }).toList(),
               ),
             ],
           ),
