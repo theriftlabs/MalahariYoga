@@ -92,7 +92,7 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
         title: _titleController.text,
         description: _descController.text,
         teacherId: user.uid,
-        categoryId: categoryId,
+        categoryId: categoryId!,
         parentCategoryId: 'root', 
         startTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
         endTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',

@@ -27,4 +27,16 @@ class CategoryService {
             .map((doc) => CategoryModel.fromFirestore(doc))
             .toList());
   }
+
+  // Create a new category
+  Future<String> createCategory(String name) async {
+    final docRef = _firestore.collection('categories').doc();
+    await docRef.set({
+      'id': docRef.id,
+      'name': name,
+      'parentId': null, // Top level by default
+      'order': DateTime.now().millisecondsSinceEpoch,
+    });
+    return docRef.id;
+  }
 }
