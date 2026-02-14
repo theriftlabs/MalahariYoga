@@ -28,12 +28,12 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
 
   late TextEditingController _titleController;
   late TextEditingController _descController;
+  late TextEditingController _newCategoryController;
   
   String? _selectedCategoryId;
-  List<CategoryModel> _categories = [];
+  bool _isCreatingCategory = false;
 
   DateTime? _startDate;
-  // End Date is now same as Start Date for single day classes
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   
@@ -44,38 +44,12 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
     super.initState();
     _titleController = TextEditingController();
     _descController = TextEditingController();
+    _newCategoryController = TextEditingController();
     _selectedCategoryId = widget.preFilledCategoryId;
     
     _startDate = widget.preFilledDate ?? DateTime.now();
     _startTime = widget.preFilledTime ?? const TimeOfDay(hour: 9, minute: 0);
     _endTime = _startTime?.replacing(hour: _startTime!.hour + 1);
-
-    _loadCategories();
-  }
-
-  Future<void> _loadCategories() async {
-    // Determine if we are filtering by parent or just getting top level
-    // For now, let's just get top level + current category if it exists
-    // Ideally we might want a flattened list or similar, but let's stick to top level for the dropdown
-    // or if preFilledCategoryId is set, maybe we don't need to load?
-    // Let's load top level for now.
-    
-    // Using stream as a one-time fetch for dropdown
-    final snapshot = await _categoryService.getTopLevelCategories().first;
-    if (mounted) {
-      setState(() {
-        _categories = snapshot;
-        // If preFilledCategoryId is not in the list (e.g. it's a subcategory), we might need to handle that.
-        // For this simple fix, we assume we are creating at the level we are viewing or selecting a top level.
-        if (_selectedCategoryId != null && !_categories.any((c) => c.id == _selectedCategoryId)) {
-             // If we can't find it in top level, maybe we should fetch it? 
-             // Or just leave it as is if it's already set (value can be anything but Dropdown needs it to be in items)
-             // If it's not in items, Dropdown will crash or show nothing if we don't handle it.
-             // Let's just append a "Current" placeholder if needed or handle this better later.
-             // For now, we assume top level categories. 
-        }
-      });
-    }
   }
 
   Future<void> _submit() async {
@@ -85,11 +59,18 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
       return;
     }
     
-    // Enforce category selection
-    final categoryId = _selectedCategoryId;
-    if (categoryId == null || categoryId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a category")));
-      return;
+    // Determine category ID
+    String? categoryId = _selectedCategoryId;
+    
+    if (_isCreatingCategory) {
+      if (_newCategoryController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please enter a category name")));
+        return;
+      }
+    } else if (categoryId == null || categoryId.isEmpty) {
+      // Logic handled in UI, but double check
+      // If we are NOT creating, and id is null, we might be in the "empty list" state which forces creation?
+      // Or user just didn't select.
     }
 
     setState(() => _isLoading = true);
@@ -98,8 +79,13 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception("No user logged in");
 
-      // Single day class: Start/End Date are the same day
-      // Days array contains just that day name
+      // Create category if needed
+      if (_isCreatingCategory) {
+         categoryId = await _categoryService.createCategory(_newCategoryController.text);
+      } else if (categoryId == null) {
+        throw Exception("Please select or create a category");
+      }
+
       final dayName = DateFormat('E').format(_startDate!);
 
       await _classService.createClass(
@@ -107,12 +93,12 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
         description: _descController.text,
         teacherId: user.uid,
         categoryId: categoryId,
-        parentCategoryId: 'root', // Simplified
+        parentCategoryId: 'root', 
         startTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
         endTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
         days: [dayName],
         startDate: _startDate!,
-        endDate: _startDate!, // Single day
+        endDate: _startDate!,
         capacity: 20, 
         inviteEnabled: true,
       );
@@ -173,20 +159,64 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
               ),
               const SizedBox(height: 16),
               
-              // Category Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedCategoryId,
-                decoration: const InputDecoration(labelText: "Category"),
-                items: _categories.map((c) {
-                  return DropdownMenuItem(value: c.id, child: Text(c.name));
-                }).toList(),
-                onChanged: (val) => setState(() => _selectedCategoryId = val),
-                 validator: (v) => v == null ? "Required" : null,
+              // Category Selection
+              StreamBuilder<List<CategoryModel>>(
+                stream: _categoryService.getTopLevelCategories(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const LinearProgressIndicator();
+                  
+                  final categories = snapshot.data!;
+                  
+                  // If no categories exist, force create mode
+                  if (categories.isEmpty) {
+                     _isCreatingCategory = true;
+                     return TextFormField(
+                       controller: _newCategoryController,
+                       decoration: const InputDecoration(
+                         labelText: "Create New Category",
+                         hintText: "No categories found. Enter name...",
+                       ),
+                       validator: (v) => v!.isEmpty ? "Required" : null,
+                     );
+                  }
+
+                  return Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       if (!_isCreatingCategory)
+                         DropdownButtonFormField<String>(
+                           value: _selectedCategoryId,
+                           decoration: const InputDecoration(labelText: "Category"),
+                           items: categories.map((c) {
+                             return DropdownMenuItem(value: c.id, child: Text(c.name));
+                           }).toList(),
+                           onChanged: (val) => setState(() => _selectedCategoryId = val),
+                           validator: (v) => v == null ? "Required" : null,
+                         ),
+                       
+                       if (_isCreatingCategory)
+                         TextFormField(
+                           controller: _newCategoryController,
+                           decoration: const InputDecoration(labelText: "New Category Name"),
+                           validator: (v) => v!.isEmpty ? "Required" : null,
+                         ),
+
+                       TextButton(
+                         onPressed: () {
+                           setState(() {
+                             _isCreatingCategory = !_isCreatingCategory;
+                             if (_isCreatingCategory) _selectedCategoryId = null;
+                           });
+                         },
+                         child: Text(_isCreatingCategory ? "Select Existing Category" : "Create New Category"),
+                       ),
+                     ],
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
               
-              // Date Picker (Single)
               SizedBox(
                 width: double.infinity,
                 child: TextButton.icon(
