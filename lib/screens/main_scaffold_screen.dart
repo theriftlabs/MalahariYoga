@@ -6,10 +6,10 @@ class MainScaffoldScreen extends StatelessWidget {
   final List<NavigationDestination> destinations;
 
   const MainScaffoldScreen({
-    Key? key,
+    super.key,
     required this.navigationShell,
     required this.destinations,
-  }) : super(key: key);
+  });
 
   void _goBranch(int index) {
     navigationShell.goBranch(

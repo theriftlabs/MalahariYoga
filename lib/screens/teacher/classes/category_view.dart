@@ -10,7 +10,7 @@ class CategoryView extends StatefulWidget {
   final String? categoryId;
   final String title;
 
-  const CategoryView({Key? key, this.categoryId, this.title = "Categories"}) : super(key: key);
+  const CategoryView({super.key, this.categoryId, this.title = "Categories"});
 
   @override
   State<CategoryView> createState() => _CategoryViewState();
@@ -96,9 +96,11 @@ class _CategoryViewState extends State<CategoryView> {
                  if (!snapshot.hasData) return const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(16), child: Text("Loading classes...")));
                  final classes = snapshot.data!;
                  
-                 if (classes.isEmpty) return const SliverToBoxAdapter(
+                 if (classes.isEmpty) {
+                   return const SliverToBoxAdapter(
                    child: Padding(padding: EdgeInsets.all(16), child: Text("No classes found. Add one!")),
                  );
+                 }
 
                  return SliverList(
                    delegate: SliverChildBuilderDelegate(

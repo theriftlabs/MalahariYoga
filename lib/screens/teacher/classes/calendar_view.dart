@@ -8,7 +8,7 @@ import 'create_class_dialog.dart';
 import 'class_details_sheet.dart';
 
 class CalendarView extends StatefulWidget {
-  const CalendarView({Key? key}) : super(key: key);
+  const CalendarView({super.key});
 
   @override
   State<CalendarView> createState() => _CalendarViewState();

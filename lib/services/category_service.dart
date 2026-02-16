@@ -4,7 +4,6 @@ import '../models/category_model.dart';
 class CategoryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get top-level categories (parentId == null)
   Stream<List<CategoryModel>> getTopLevelCategories() {
     return _firestore
         .collection('categories')
@@ -16,7 +15,6 @@ class CategoryService {
             .toList());
   }
 
-  // Get subcategories for a parent
   Stream<List<CategoryModel>> getSubCategories(String parentId) {
     return _firestore
         .collection('categories')
