@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../models/class_model.dart';
-import '../../../services/invite_service.dart';
+// import '../../services/invite_service.dart';
 
 class ClassDetailsSheet extends StatefulWidget {
   final ClassModel classModel;

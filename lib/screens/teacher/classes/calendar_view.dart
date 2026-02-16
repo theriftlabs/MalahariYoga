@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../../../services/class_service.dart';
+import '../../services/class_service.dart';
 import '../../../models/class_model.dart';
 import 'create_class_dialog.dart';
 import 'class_details_sheet.dart';

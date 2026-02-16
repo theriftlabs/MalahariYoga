@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:malahari_yoga/screens/teacher/classes/create_class_dialog.dart';
 import 'package:malahari_yoga/screens/teacher/classes/class_details_sheet.dart';
-import '../../../services/category_service.dart';
-import '../../../services/class_service.dart';
+import '../../services/category_service.dart';
+import '../../services/class_service.dart';
 import '../../../models/category_model.dart';
 import '../../../models/class_model.dart';
 
