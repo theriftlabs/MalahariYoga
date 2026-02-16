@@ -19,19 +19,18 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
 
     setState(() => _loading = true);
 
+    final auth = FirebaseAuth.instance;
+
     try {
       final googleSignIn = GoogleSignIn();
 
-      // Open account picker
       final googleUser = await googleSignIn.signIn();
 
-      // User cancelled
       if (googleUser == null) {
         setState(() => _loading = false);
         return;
       }
 
-      // Get auth tokens
       final googleAuth = await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
@@ -39,29 +38,43 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      // 🔹 Sign in
+      final userCredential =
+      await auth.signInWithCredential(credential);
 
-      final user = FirebaseAuth.instance.currentUser;
-      if(user == null) return;
+      final user = userCredential.user;
+      if (user == null) {
+        setState(() => _loading = false);
+        return;
+      }
 
-      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+      // 🔥 ENSURE GOOGLE IS PERMANENTLY LINKED
+      final providerIds =
+      user.providerData.map((e) => e.providerId).toList();
+
+      if (!providerIds.contains('google.com')) {
+        await user.linkWithCredential(credential);
+      }
+
+      // 🔹 Create / merge Firestore profile
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .set({
         "email": user.email,
-        "createdAt" : FieldValue.serverTimestamp()
-        },
-        SetOptions(merge: true)
-      );
+        "createdAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
-      String msg = "Google sign-in failed. Please try again.";
+      String msg = "Google sign-in failed.";
 
       if (e.code == "account-exists-with-different-credential") {
         msg =
-        "This email already has an account. Please log in with Email first, then connect Google.";
+        "This email already has an account. Please log in with Email first.";
       } else if (e.code == "network-request-failed") {
-        msg = "No internet connection. Please try again.";
+        msg = "No internet connection.";
       } else {
         msg = "Google sign-in failed (${e.code}).";
       }
@@ -69,10 +82,13 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg)),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Something went wrong. Please try again.")),
+        const SnackBar(
+          content: Text("Something went wrong."),
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -95,65 +111,92 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                constraints:
+                BoxConstraints(minHeight: constraints.maxHeight),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
+                    constraints:
+                    const BoxConstraints(maxWidth: 420),
                     child: Card(
                       elevation: 4,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius:
+                        BorderRadius.circular(16),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(22.0),
+                        padding:
+                        const EdgeInsets.all(22.0),
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisSize:
+                          MainAxisSize.min,
                           children: [
-                            const Icon(Icons.self_improvement, size: 52),
+                            const Icon(
+                              Icons.self_improvement,
+                              size: 52,
+                            ),
                             const SizedBox(height: 12),
-
                             const Text(
                               "Malahari Yoga",
                               style: TextStyle(
                                 fontSize: 22,
-                                fontWeight: FontWeight.w700,
+                                fontWeight:
+                                FontWeight.w700,
                               ),
                             ),
-
                             const SizedBox(height: 6),
-
                             Text(
                               "Sign in to continue",
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade700,
+                                color:
+                                Colors.grey.shade700,
                               ),
                             ),
-
                             const SizedBox(height: 22),
 
                             SizedBox(
                               width: double.infinity,
                               height: 48,
                               child: ElevatedButton.icon(
-                                onPressed: _loading ? null : _signInWithGoogle,
+                                onPressed: _loading
+                                    ? null
+                                    : _signInWithGoogle,
                                 icon: _loading
                                     ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                  CircularProgressIndicator(
+                                      strokeWidth:
+                                      2),
                                 )
-                                    : const Icon(Icons.g_mobiledata, size: 26),
+                                    : const Icon(
+                                    Icons
+                                        .g_mobiledata,
+                                    size: 26),
                                 label: Text(
-                                  _loading ? "Signing in..." : "Continue with Google",
+                                  _loading
+                                      ? "Signing in..."
+                                      : "Continue with Google",
                                 ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.black87,
+                                style:
+                                ElevatedButton
+                                    .styleFrom(
+                                  backgroundColor:
+                                  Colors.white,
+                                  foregroundColor:
+                                  Colors.black87,
                                   elevation: 0,
-                                  side: BorderSide(color: Colors.grey.shade300),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                      color: Colors
+                                          .grey
+                                          .shade300),
+                                  shape:
+                                  RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                        12),
                                   ),
                                 ),
                               ),
@@ -163,15 +206,30 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
 
                             Row(
                               children: [
-                                Expanded(child: Divider(color: Colors.grey.shade300)),
+                                Expanded(
+                                    child: Divider(
+                                        color: Colors
+                                            .grey
+                                            .shade300)),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  padding:
+                                  const EdgeInsets
+                                      .symmetric(
+                                      horizontal:
+                                      10),
                                   child: Text(
                                     "or",
-                                    style: TextStyle(color: Colors.grey.shade600),
+                                    style: TextStyle(
+                                        color: Colors
+                                            .grey
+                                            .shade600),
                                   ),
                                 ),
-                                Expanded(child: Divider(color: Colors.grey.shade300)),
+                                Expanded(
+                                    child: Divider(
+                                        color: Colors
+                                            .grey
+                                            .shade300)),
                               ],
                             ),
 
@@ -180,15 +238,26 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
                             SizedBox(
                               width: double.infinity,
                               height: 48,
-                              child: ElevatedButton.icon(
+                              child:
+                              ElevatedButton.icon(
                                 onPressed: () {
-                                  context.go('/login');
+                                  context.go(
+                                      '/login');
                                 },
-                                icon: const Icon(Icons.email_outlined),
-                                label: const Text("Continue with Email"),
-                                style: ElevatedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                icon: const Icon(
+                                    Icons
+                                        .email_outlined),
+                                label: const Text(
+                                    "Continue with Email"),
+                                style:
+                                ElevatedButton
+                                    .styleFrom(
+                                  shape:
+                                  RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                        12),
                                   ),
                                 ),
                               ),
@@ -198,10 +267,12 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
 
                             Text(
                               "By continuing, you agree to our Terms & Privacy Policy.",
-                              textAlign: TextAlign.center,
+                              textAlign:
+                              TextAlign.center,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color:
+                                Colors.grey.shade600,
                               ),
                             ),
                           ],

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:malahari_yoga/app%20setup/router_wrapper.dart';
 import 'package:malahari_yoga/app%20setup/splashScreen.dart';
 import '../firebase_options.dart';
 import '../nav/appRouter.dart';
 import 'FirebaseFailedScreen.dart';
+import 'deepLinkHandler.dart';
 
 class AppBootstrap extends StatefulWidget {
   const AppBootstrap({super.key});
@@ -47,7 +49,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
           return const SplashScreen();
         }
 
-        // If Firebase failed -> show safe error UI, no white screen
+        // Firebase failed
         if (snapshot.hasError) {
           return FirebaseFailedScreen(
             error: snapshot.error.toString(),
@@ -59,10 +61,13 @@ class _AppBootstrapState extends State<AppBootstrap> {
           );
         }
 
-        // Firebase ok -> continue app
+        // Continue app
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           routerConfig: appRouter,
+          builder: (context, child) {
+            return RouterWrapper(child: child!);
+          },
         );
       },
     );

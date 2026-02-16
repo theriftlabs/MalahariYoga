@@ -156,7 +156,7 @@ class _ManualLoginScreenState extends State<ManualLoginScreen> {
                                   try{
                                     await FirebaseAuth.instance.signInWithEmailAndPassword(
                                         email: emailController.text.trim(),
-                                        password: passController.text
+                                        password: passController.text.trim()
                                     );
 
                                     if (!context.mounted) return;
@@ -173,9 +173,9 @@ class _ManualLoginScreenState extends State<ManualLoginScreen> {
                                     } else if (e.code == "user-not-found") {
                                       msg = "No account found with this email. Try signing up.";
                                     } else if (e.code == "wrong-password") {
-                                      msg = "Incorrect password. Try again.";
+                                      msg = "Incorrect password. Try again. If you signed up with Google, please use Continue with Google.";
                                     } else if (e.code == "invalid-credential") {
-                                      msg = "Incorrect email or password.";
+                                      msg = "Incorrect email or password. If you signed up with Google, please use Continue with Google.";
                                     } else if (e.code == "network-request-failed") {
                                       msg = "No internet connection. Please try again.";
                                     } else if (e.code == "too-many-requests") {

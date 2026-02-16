@@ -51,6 +51,15 @@
                 <string>com.googleusercontent.apps.748192528786-h6cf1haees0l7ajr42tbqdb16ojefblg</string>
             </array>
         </dict>
+
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>malahariyoga</string>
+            </array>
+        </dict>
     </array>
 
 </dict> </plist> ```
