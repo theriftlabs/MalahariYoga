@@ -112,7 +112,21 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
 
                                   try{
                                     setState(() => _loading = true);
-                                    await FirebaseAuth.instance.sendPasswordResetEmail(email: emailController.text.trim());
+                                    final actionCodeSettings = ActionCodeSettings(
+                                      url: 'https://yoga-scheduling-app-3198f.web.app/password-reset',
+                                      handleCodeInApp: true,
+
+                                      androidPackageName: 'com.riftlabs.malahariyoga',
+                                      androidInstallApp: true,
+                                      androidMinimumVersion: '21',
+
+                                      iOSBundleId: 'com.riftlabs.malahariyoga',
+                                    );
+
+                                    await FirebaseAuth.instance.sendPasswordResetEmail(
+                                      email: emailController.text.trim(),
+                                      actionCodeSettings: actionCodeSettings,
+                                    );
                                     await Future.delayed(const Duration(milliseconds: 600));
 
                                     if (!context.mounted) return;

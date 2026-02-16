@@ -7,6 +7,7 @@ import 'package:malahari_yoga/auth/manualLoginScreen.dart';
 import 'package:malahari_yoga/auth/manualSignupScreen.dart';
 import 'package:malahari_yoga/auth/passwordResetScreen.dart';
 import 'package:malahari_yoga/auth/profileSetupScreen.dart';
+import 'package:malahari_yoga/auth/resetPasswordConfirmScreen.dart';
 import 'package:malahari_yoga/auth/verifyScreen.dart';
 import 'package:malahari_yoga/nav/userProfileState.dart';
 import 'package:malahari_yoga/screens/main_scaffold_screen.dart';
@@ -23,7 +24,6 @@ import 'package:malahari_yoga/screens/admin/dashboard_tab.dart';
 import 'package:malahari_yoga/screens/admin/manage_tab.dart';
 import 'package:malahari_yoga/screens/admin/content_tab.dart';
 import 'package:malahari_yoga/screens/admin/profile_tab.dart';
-
 
 final AuthState authStateInstance = AuthState();
 final UserProfileState userProfileStateInstance = UserProfileState();
@@ -241,11 +241,30 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/resetPassword',
       builder: (context, state) => const PasswordResetScreen(),
-    )
+    ),
+    GoRoute(
+      path: '/resetPasswordConfirm',
+      builder: (context, state) {
+        final oobCode = state.uri.queryParameters['oobCode'];
+
+        if (oobCode == null || oobCode.isEmpty) {
+          return const ManualLoginScreen();
+        }
+
+        return ResetPasswordConfirmScreen(
+          oobCode: oobCode,
+        );
+      },
+    ),
   ],
 
   redirect: (context, state) {
-    final loc = state.matchedLocation;
+    final loc = state.uri.path; // ✅ CORRECT for your GoRouter version
+
+    // 🔑 Allow password reset routes ALWAYS
+    if (loc == '/resetPassword' || loc == '/resetPasswordConfirm') {
+      return null;
+    }
 
     // 0) Wait for FirebaseAuth to initialize
     if (!authStateInstance.isInitialized) {
@@ -254,47 +273,44 @@ final GoRouter appRouter = GoRouter(
 
     // 1) Not logged in -> only allow auth screens
     if (!authStateInstance.isLoggedIn) {
-      const allowed = {'/', '/login', '/signup', '/resetPassword'};
+      const allowed = {'/', '/login', '/signup'};
       return allowed.contains(loc) ? null : '/';
     }
 
-    // 2) Logged in but NOT verified -> only allow verify screen
+    // 2) Logged in but NOT verified
     if (!authStateInstance.isVerified) {
       return (loc == '/verify') ? null : '/verify';
     }
 
-    // 3) Logged in + verified -> attach Firestore profile listener
+    // 3) Attach Firestore profile listener
     userProfileStateInstance.attachUser(authStateInstance.user);
 
-    // Wait until Firestore profile doc is loaded at least once
     if (!userProfileStateInstance.isInitialized) {
       return (loc == '/loading') ? null : '/loading';
     }
 
-    // 4) Profile not complete -> go to profile setup
     if (!userProfileStateInstance.isProfileComplete) {
       return (loc == '/profileSetup') ? null : '/profileSetup';
     }
 
-    // 5) Profile complete -> go based on role
     final role = userProfileStateInstance.role.toLowerCase();
 
-    // Prevent infinite redirect loop by checking if we are already in the correct shell
     if (role == 'teacher') {
-       if (loc.startsWith('/teacher')) return null; 
-       return '/teacherHome';
+      if (loc.startsWith('/teacher')) return null;
+      return '/teacherHome';
     }
 
     if (role == 'student') {
       if (loc.startsWith('/student')) return null;
       return '/studentHome';
-    } else if (role == 'admin') {
+    }
+
+    if (role == 'admin') {
       if (loc.startsWith('/admin')) return null;
       return '/adminHome';
     }
 
-    // fallback if role is missing or invalid
-    return (loc == '/loading') ? null : '/loading';
+    return '/';
   },
 
   refreshListenable: Listenable.merge([

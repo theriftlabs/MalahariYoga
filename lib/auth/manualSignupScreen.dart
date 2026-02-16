@@ -145,7 +145,7 @@ class _ManualSignupScreenState extends State<ManualSignupScreen> {
                                   try{
                                     final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
                                         email: emailController.text.trim(),
-                                        password: passController.text
+                                        password: passController.text.trim()
                                     );
 
                                     await cred.user!.sendEmailVerification();
