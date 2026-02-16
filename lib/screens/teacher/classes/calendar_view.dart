@@ -35,9 +35,17 @@ class _CalendarViewState extends State<CalendarView> {
     // Weekday string: Mon, Tue...
     final dayName = DateFormat('E').format(day);
     
+    // Normalize day to start of day for comparison
+    final checkDate = DateTime(day.year, day.month, day.day);
+
     return _allClasses.where((c) {
-      // Check date range
-      if (day.isBefore(c.startDate) || day.isAfter(c.endDate)) return false;
+      // Normalize start and end dates to start of day
+      final start = DateTime(c.startDate.year, c.startDate.month, c.startDate.day);
+      final end = DateTime(c.endDate.year, c.endDate.month, c.endDate.day);
+
+      // Check date range (Inclusive)
+      if (checkDate.isBefore(start) || checkDate.isAfter(end)) return false;
+      
       // Check days array
       return c.days.contains(dayName);
     }).toList();
