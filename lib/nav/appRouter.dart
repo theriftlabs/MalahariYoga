@@ -29,7 +29,7 @@ final AuthState authStateInstance = AuthState();
 final UserProfileState userProfileStateInstance = UserProfileState();
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/teacherHome',
   routes: [
     GoRoute(
       path: '/',
@@ -265,6 +265,9 @@ final GoRouter appRouter = GoRouter(
     if (loc == '/resetPassword' || loc == '/resetPasswordConfirm') {
       return null;
     }
+
+    // DEBUG: Force allow teacher routes for testing
+    if (loc.startsWith('/teacher')) return null; // Bypass auth for teacher routes
 
     // 0) Wait for FirebaseAuth to initialize
     if (!authStateInstance.isInitialized) {

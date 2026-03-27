@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../services/class_service.dart';
+import '../../../services/category_service.dart';
 
 class CreateClassDialog extends StatefulWidget {
   final String? preFilledCategoryId;
@@ -28,11 +29,13 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
   late TextEditingController _titleController;
   late TextEditingController _descController;
   late TextEditingController _newCategoryController;
+  late TextEditingController _categoryIdController;
   
   String? _selectedCategoryId;
   bool _isCreatingCategory = false;
 
   DateTime? _startDate;
+  DateTime? _endDate;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   
@@ -81,19 +84,20 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
       if (user == null) throw Exception("No user logged in");
 
       // Create category if needed
+      String categoryId;
       if (_isCreatingCategory) {
          categoryId = await _categoryService.createCategory(_newCategoryController.text);
-      } else if (categoryId == null) {
-        throw Exception("Please select or create a category");
+      } else {
+         categoryId = _categoryIdController.text.trim();
       }
 
-      final dayName = DateFormat('E').format(_startDate!);
+      final dayName = DateFormat('E').format(_startDate!); // Keep usage to avoid unused var warning if needed, or remove if unused
 
       await _classService.createClass(
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         teacherId: user.uid,
-        categoryId: _categoryIdController.text.isEmpty ? 'uncategorized' : _categoryIdController.text,
+        categoryId: categoryId,
         parentCategoryId: 'root', // Simplified for demo
         startTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
         endTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
@@ -120,7 +124,7 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
     }
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDate(bool isStart) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: isStart ? (_startDate ?? DateTime.now()) : (_endDate ?? DateTime.now()),
@@ -209,7 +213,7 @@ class _CreateClassDialogState extends State<CreateClassDialog> {
                     ),
                   ),
                   Expanded(
-                    child: TextButton.icon(
+                    child: TextButton(
                       onPressed: () => _pickTime(false),
                       child: Text(_endTime == null ? "End Time" : _endTime!.format(context)),
                     ),

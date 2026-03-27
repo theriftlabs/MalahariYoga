@@ -3,6 +3,7 @@ import "package:flutter/material.dart";
 import "package:go_router/go_router.dart";
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../firebase_options.dart';
 
 class ContinueWithScreen extends StatefulWidget {
   const ContinueWithScreen({super.key});
@@ -22,8 +23,11 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
     final auth = FirebaseAuth.instance;
 
     try {
-      final googleSignIn = GoogleSignIn();
-
+      final googleSignIn = GoogleSignIn(
+        clientId: DefaultFirebaseOptions.ios.iosClientId,
+        serverClientId: '748192528786-v4tf9qn2dus1bl5vf1cesjjfe80hrg6g.apps.googleusercontent.com',
+      );
+      await googleSignIn.signOut();
       final googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -82,12 +86,12 @@ class _ContinueWithScreenState extends State<ContinueWithScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg)),
       );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Something went wrong."),
+        SnackBar(
+          content: Text("Something went wrong: $e"),
         ),
       );
     } finally {

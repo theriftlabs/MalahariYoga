@@ -17,7 +17,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  String selectedRole = "student";
+  String selectedRole = "teacher";
 
   final PhoneNumberUtil _phoneUtil = PhoneNumberUtil();
   bool isPhoneValid = false;
