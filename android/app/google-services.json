@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "748192528786-8l6fr3n4vk79q6s87rrsar02velp71jd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riftlabs.malahariyoga",
+            "certificate_hash": "f663c995f6818261611961a4ef8f8ec802c15886"
+          }
+        },
+        {
           "client_id": "748192528786-e87urm54u5eaj4uvtinkcqr387tf72ak.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
